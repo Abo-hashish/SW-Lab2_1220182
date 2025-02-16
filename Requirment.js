@@ -4,93 +4,114 @@
 3- apply all the concepts you learned during this lab (Naming, comments,  functions)
 */
 
-class pt {
-  //this constructor is used to construct the pt class
+class point {
   constructor(coordX, coordY) {
     this.coordX = coordX;
     this.coordY = coordY;
   }
+
+  validatePoint(width, height) {
+    if (!height || height <= 0 || !width || width <= 0) {
+      throw Error("invalid Width and Height"); // throws an error in case of width or height < 0
+    }
+  }
 }
 
 class Rectangle {
-  constructor(startingPoint, w, h) {
-    if (!h || h <= 0 || !w || w <= 0) {
-      throw Error("invalid Width and Height"); // throws an error in cas of width or height < 0
-    }
+  constructor(startingPoint, width, height) {
+    startingPoint.validatePoint(width, height)
     this.startingPoint = startingPoint;
-    this.w = w; // w is the width
-    this.h = h; // h is the height
+    this.width = width; 
+    this.height = height; 
   }
 
   // ***************
-  // METHODS
+  // Calculations
   // ***************
 
-  area() {
-    return this.w * this.h;
+  calculateArea() {
+    return this.width * this.height;
   }
 
   calculatePerimeter() {
-    return 2 * this.w + 2 * this.h;
+    return 2 * this.width + 2 * this.height;
   }
-  // getPerimeter() {
-  //   return 2 * this.w + 2 * this.h;
-  // }
 
-  updateMyHeight(height) {
+  // ***************
+  // Setters and Getters
+  // ***************
+
+  getHeight() {
+    return this.height;
+  }
+
+  setHeight(height) {
+    //handeling square special case
+    if(this.height==this.width) {
+      this.width=height;
+    }
+
     if (height && height > 0) {
-      this.h = height;
+      this.height = height;
     }
-    //TODO: handle case of updating the height of square
-  }
-
-  update({ startingPoint, width, height }) {
-    if (!height || height <= 0 || !width || width <= 0) {
-      throw Error("invalid Width and Height"); // throws an error in cas of width or height < 0
-    }
-    this.startingPoint = startingPoint;
-    this.w = width;
-    this.h = height;
-  }
-
-  fetchHeight() {
-    return this.h;
-  }
-
-  //function that print the endpoints
-  endPoints() {
-    const topRight = this.startingPoint.coordX + this.broad;
-    const bottomLeft = this.startingPoint.coordY + this.h;
-    console.log("End Point X-Axis (Top Right): " + topRight);
-    console.log("End Point Y-Axis (Bottom Left): " + bottomLeft);
   }
 
   getWidth() {
-    return this.w;
+    return this.width;
+  }
+
+  setWidth(width) {
+    //handeling square special case
+    if(this.height==this.width) {
+      this.height=width;
+    }
+
+    if (width && width > 0) {
+      this.width = width;
+    }
+  }
+
+// ***************
+// Misc
+// ***************
+
+  updateParameters({ startingPoint, width, height }) {
+    startingPoint.validatePoint(width, height)
+    this.startingPoint = startingPoint;
+    this.width = width;
+    this.height = height;
+  }
+
+  printEndPoints() {
+    const topRight = this.startingPoint.coordX + this.width;
+    const bottomLeft = this.startingPoint.coordY + this.height;
+    console.log("End Point X-Axis (Top Right): " + topRight);
+    console.log("End Point Y-Axis (Bottom Left): " + bottomLeft);
   }
 }
 
-function buildObject(Width, x, Height, y) {
-  const mainPoint = new pt(x, y);
-  const rect = new Rectangle(mainPoint, Width, Height);
-  return rect;
+function constructRectangle(x, y, width, height) {
+  const mainPoint = new point(x, y);
+  const rectangle = new Rectangle(mainPoint, width, height);
+  return rectangle;
 }
 
-function construct_Square(cord_x, CordY, SquareHeight) {
+function constructSquare(x, y, height) {
   let square;
-  if (!SquareHeight || SquareHeight <= 0) {
-    square = buildObject(SquareHeight, cord_x, SquareHeight, CordY);
+  if (!height || height <= 0) {
+    square = constructRectangle(x, y, height, height);
   }
-  const square_area = square.area();
-  const squarePerimeter = square.calculatePerimeter();
-  console.log("square Area ", square_area);
-  console.log("square Perimeter ", squarePerimeter);
+  const area = square.calculateArea();
+  const perimeter = square.calculatePerimeter();
+  console.log("square Area ", area);
+  console.log("square Perimeter ", perimeter);
 }
 
-const myRect = buildObject(2, 3, 5, 4);
-const sq = construct_Square();
+const myRectangle = constructRectangle(2, 3, 5, 4);
+const mySquare = constructSquare();
 
-console.log(sq.calculatePerimeter());
-sq.endPoints();
+console.log(mySquare.calculatePerimeter());
 
-myRect.updateMyHeight(3);
+mySquare.printEndPoints();
+
+myRectangle.setHeight(3);

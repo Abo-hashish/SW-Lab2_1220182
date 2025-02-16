@@ -1,43 +1,138 @@
-var i = [], t = [], c = [], f = {};
+let items = [];
+let transactions = [];
+let categories = [];
+let fields = {};
 
-function doStuff(a, b) {
-    if (["add", "edit", "rmI"].includes(a)) {
-        if (a === "add") {
-            var itm = { n: b[0], cat: b[1], qty: b[2], prc: b[3], unt: b[4], added: new Date(), custF: b[5] || {} };
-            i.push(itm);
-            if (!c.includes(b[1])) c.push(b[1]);
-            t.push({ type: "add", itm });
-        } else if (a === "edit" && i[b[0]]) {
-            t.push({ type: "edit", old: i[b[0]], new: b.slice(1) });
-            i[b[0]] = { ...i[b[0]], n: b[1], cat: b[2], qty: b[3], prc: b[4], unt: b[5], custF: b[6] || {} };
-        } else if (a === "rmI" && i[b[0]]) {
-            t.push({ type: "delete", itm: i[b[0]] });
-            i.splice(b[0], 1);
-        }
-        console.log("=== Dashboard ===\nItems: " + i.length + "\nTotal: $" + i.reduce((tot, x) => tot + x.qty * x.prc, 0).toFixed(2) + "\nCats: " + c.join(', '));
+function selectAction(actionType, itemParameters) {
+
+    switch (actionType) {
+        case "add":
+            addItem(itemParameters);
+            break;
+
+        case "edit":
+            editItem(itemParameters);
+            break;
+
+        case "remove":
+            removeItem(itemParameters[0]);
+            break;
+        
+        case "sale":
+            sellItem(itemParameters[0], itemParameters[2]);
+            break;
+        
+        case "restock":
+            restockItem(itemParameters[0], itemParameters[2]);
+            break;
+
+        case "search":
+            console.log(items.filter(x => [x.n, x.categories, x.price].some(v => v.toString().toLowerCase().includes(itemParameters[0].toLowerCase()))));
+            break;
+        
+        case "viewInv":
+            console.log("=== Inv ===", items);
+            break;
+        
+        case "viewTrans":
+            console.log("Transactions:\n", transactions);
+            break;
+
+        case "viewInvAge":
+            console.log(items.map(x => `${x.name}: ${Math.floor((new Date() - new Date(x.dateAdded)) / (1000 * 60 * 60 * 24))}d`).join('\n'));
+            break;
+
+        case "exportAll":
+            console.log("CSV:\n" + ["Name,Category,Quantity,Price,Unit,AddedAt"].concat(items.map(x => Objectransactions.values(x).join(','))).join('\n'));
+
+        case "import":
+            itemParameters[0].forEach(x => selectAction("add", [x.name, x.category, x.quantity, x.price, x.unit]));
+            break;
+
+        case "addField":
+            if (!fields[itemParameters[0]]) { 
+                fields[itemParameters[0]] = null;
+            }
+            break;
+
+        case "updateField":
+            items.find(x => x.name === itemParameters[0])?.customFields[itemParameters[1]] = itemParameters[2];
+            break;
     }
-    if (["Sale", "rstck"].includes(a)) {
-        for (let k of i) {
-            if (k.n === b[0]) {
-                if (a === "Sale" && k.qty >= b[1]) {
-                    k.qty -= b[1];
-                    t.push({ type: "sale", itm: k, qtyS: b[1], d: new Date() });
-                    console.log(`Sold ${b[1]} ${k.unt} of ${k.n}`);
-                } else if (a === "rstck") {
-                    k.qty += b[1];
-                    t.push({ type: "restock", itm: k, qtyR: b[1], d: new Date() });
-                    console.log(`Restocked ${b[1]} ${k.unt} of ${k.n}`);
-                }
-                break;
+
+}
+
+function addItem(itemParameters) {
+    let item = { 
+        name: itemParameters[0], 
+        category: itemParameters[1], 
+        quantity: itemParameters[2],
+        price: itemParameters[3], 
+        unit: itemParameters[4], 
+        dateAdded: new Date(),
+        customFields: itemParameters[5] || {} };
+
+    items.push(item);
+    if (!categories.includes(itemParameters[1])) { 
+        categories.push(itemParameters[1]);
+    }
+    transactions.push({ type: "add", item });
+    printDashboard();
+}
+
+function editItem(itemParameters) {
+    transactions.push({ type: "edit", old: items[itemParameters[0]], new: itemParameters.slice(1) });
+    items[itemParameters[0]] = { 
+        ...items[itemParameters[0]], 
+        name: itemParameters[1], 
+        category: itemParameters[2], 
+        quantity: itemParameters[3], 
+        pric: itemParameters[4], 
+        unit: itemParameters[5], 
+        customFields: itemParameters[6] || {} 
+    };
+    printDashboard();
+}
+
+function removeItem(itemName) {
+    transactions.push({ type: "delete", item: itemName });
+    items.splice(itemName, 1);
+    printDashboard();
+}
+
+function printDashboard() {
+    console.log("=== Dashboard ===\nItems: " 
+        + items.length + "\nTotal: $" 
+        + items.reduce((tot, x) => tot + x.qty * x.prc, 0).toFixed(2) 
+        + "\nCategories: " + categories.join(', '));
+}
+
+function sellItem(itemName, itemQuantity)
+{
+    for (let item of items)
+    {
+        if (item.name === itemName)
+        {
+            if (item.quantity >= itemQuantity) {
+                item.quantity -= itemQuantity;
+                transactions.push({ type: "sale", item: item, quantitySold: itemQuantity, sellDate: new Date() });
+                console.log(`Sold ${itemQuantity} ${item.unit} of ${item.name}`);
+            }
+            if(item.quantity<=10) {
+                console.log(`the item ${item.name} has less than 10 items remaining`);
             }
         }
     }
-    if (a === "srch") console.log(i.filter(x => [x.n, x.cat, x.prc].some(v => v.toString().toLowerCase().includes(b[0].toLowerCase()))));
-    if (a === "vwI") console.log("=== Inv ===", i);
-    if (a === "xprtAll") console.log("CSV:\n" + ["Name,Category,Quantity,Price,Unit,AddedAt"].concat(i.map(x => Object.values(x).join(','))).join('\n'));
-    if (a === "vwAllT") console.log("Transactions:\n", t);
-    if (a === "vwIAg") console.log(i.map(x => `${x.n}: ${Math.floor((new Date() - new Date(x.added)) / (1000 * 60 * 60 * 24))}d`).join('\n'));
-    if (a === "Imprt") b[0].forEach(x => doStuff("add", [x.n, x.cat, x.quantity, x.price, x.unit]));
-    if (a === "addFld" && !f[b[0]]) f[b[0]] = null;
-    if (a === "udCFld") i.find(x => x.n === b[0])?.custF[b[1]] = b[2];
+}
+
+function restockItem(itemName, itemQuantity)
+{
+    for (let item of items)
+    {
+        if(item.name === itemName) {
+            item.quantity += itemQuantity;
+            transactions.push({ type: "restock", item: item, quantityRestocked: itemQuantity, sellDate: new Date() });
+            console.log(`Restocked ${itemQuantity} ${item.unit} of ${item.name}`);
+        }
+    }
 }
